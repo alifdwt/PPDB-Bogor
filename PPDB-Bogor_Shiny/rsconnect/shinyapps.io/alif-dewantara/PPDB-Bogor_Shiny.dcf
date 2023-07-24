@@ -1,0 +1,12 @@
+name: PPDB-Bogor_Shiny
+title: PPDB-Bogor_Shiny
+username: alif-dewantara
+account: alif-dewantara
+server: shinyapps.io
+hostUrl: https://api.shinyapps.io/v1
+appId: 9495608
+bundleId: 7487579
+url: https://alif-dewantara.shinyapps.io/PPDB-Bogor_Shiny/
+version: 1
+asMultiple: FALSE
+asStatic: FALSE

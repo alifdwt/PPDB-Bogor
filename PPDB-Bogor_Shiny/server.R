@@ -17,46 +17,55 @@ server <- function(input, output, session) {
   # MEMUAT DATA
   ### RINCIAN ###
   # lokasi_sekolah <- read_csv("E:/Proyekan/PPDB Bogor/Hasil/shiny-datasets/lokasi_sekolah.csv",
-  #                            col_types = cols(No = col_skip(), Koordinat = col_skip())) %>% change_column_names()
+  #                           col_types = cols(No = col_skip(), Koordinat = col_skip())) %>% change_column_names()
   # lokasi_sekolah$warna_sekolah <- distinctColorPalette(length(unique(lokasi_sekolah$nama_sekolah)))
-  # write.csv(lokasi_sekolah, "E:/Proyekan/PPDB Bogor/Hasil/shiny-datasets/rincian_sekolah.csv")
-  rincian_sekolah <- read_csv("E:/Proyekan/PPDB Bogor/Hasil/shiny-datasets/rincian_sekolah.csv", 
-                              col_types = cols(...1 = col_skip()))
-  ### PRESTASI ###
-  smp_prestasi <- read_csv("E:/Proyekan/PPDB Bogor/Hasil/shiny-datasets/smp_prestasi_asal.csv", 
-                           col_types = cols(...1 = col_skip(), `Nomor Pendaftaran` = col_character(), 
-                                            `Jenis Kejuaraan` = col_character(), 
-                                            `Nilai Total` = col_double())) %>% change_column_names()
-  smp_prestasi$jenis_kejuaraan <- str_to_upper(smp_prestasi$jenis_kejuaraan)
-  smp_prestasi <- drop_na(smp_prestasi)
-  warna_prestasi <- data.frame(jenis_kejuaraan = unique(smp_prestasi$jenis_kejuaraan),
-                               warna_prestasi = distinctColorPalette(length(unique(smp_prestasi$jenis_kejuaraan))))
-  smp_prestasi <- smp_prestasi %>%
-    left_join(rincian_sekolah%>%select(nama_sekolah, warna_sekolah), by=c("sekolah_pilihan" = "nama_sekolah")) %>%
-    left_join(warna_prestasi, by="jenis_kejuaraan")
+  # write.csv(lokasi_sekolah, "PPDB-Bogor_Shiny/rincian_sekolah.csv")
+  # rincian_sekolah <- read_csv("https://raw.githubusercontent.com/alifdwt/PPDB-Bogor/main/Hasil/shiny-datasets/rincian_sekolah.csv", 
+  #                             col_types = cols(...1 = col_skip()))
+  # ### PRESTASI ###
+  # smp_prestasi <- read_csv("https://raw.githubusercontent.com/alifdwt/PPDB-Bogor/main/Hasil/shiny-datasets/smp_prestasi_asal.csv", 
+  #                          col_types = cols(...1 = col_skip(), `Nomor Pendaftaran` = col_character(), 
+  #                                           `Jenis Kejuaraan` = col_character(), 
+  #                                           `Nilai Total` = col_double())) %>% change_column_names()
+  # smp_prestasi$jenis_kejuaraan <- str_to_upper(smp_prestasi$jenis_kejuaraan)
+  # smp_prestasi <- drop_na(smp_prestasi)
+  # warna_prestasi <- data.frame(jenis_kejuaraan = unique(smp_prestasi$jenis_kejuaraan),
+  #                              warna_prestasi = distinctColorPalette(length(unique(smp_prestasi$jenis_kejuaraan))))
+  # smp_prestasi <- smp_prestasi %>%
+  #   left_join(rincian_sekolah%>%select(nama_sekolah, warna_sekolah), by=c("sekolah_pilihan" = "nama_sekolah")) %>%
+  #   left_join(warna_prestasi, by="jenis_kejuaraan")
+  # 
+  # ### RAPOR ###
+  # smp_rapor <- read_csv("https://raw.githubusercontent.com/alifdwt/PPDB-Bogor/main/Hasil/shiny-datasets/smp_rapor_asal.csv", 
+  #                       col_types = cols(...1 = col_skip(), `Nomor Pendaftaran` = col_character(), 
+  #                                        `Nilai Total` = col_double())) %>% change_column_names()
+  # smp_rapor <- merge(smp_rapor, rincian_sekolah%>%select(nama_sekolah, warna_sekolah), by.x = "sekolah_pilihan", by.y = "nama_sekolah", all.x = TRUE)
+  # 
+  # ### ZONASI ###
+  # smp_zonasi <- read_csv("https://raw.githubusercontent.com/alifdwt/PPDB-Bogor/main/Hasil/shiny-datasets/smp_zonasi_hasil.csv", 
+  #                        col_types = cols(#...1 = col_skip(),
+  #                                         `Jarak (meter)` = col_double())) %>% change_column_names()
+  # smp_zonasi <- smp_zonasi %>%
+  #   mutate(
+  #     warna_zona = ifelse(zona == "Zona 1", "#e53935",
+  #                    ifelse(zona == "Zona 2", "#ffb74d",
+  #                           ifelse(zona == "Zona 3", "#ffee58",
+  #                                  ifelse(zona == "Zona 4", "#388e5a",
+  #                                         ifelse(zona == "Zona 5", "#42a5f5",
+  #                                                ifelse(zona == "Zona 6", "#8756d5",
+  #                                                       ifelse(zona == "Zona 7", "#ea9bd7", "grey")))))))) %>%
+  #   rename(No = 1) %>%
+  #   merge(rincian_sekolah%>%select(nama_sekolah, warna_sekolah), by.x = "pilihan_sekolah", by.y = "nama_sekolah", all.x = TRUE) %>%
+  #   arrange(No)
   
-  ### RAPOR ###
-  smp_rapor <- read_csv("E:/Proyekan/PPDB Bogor/Hasil/shiny-datasets/smp_rapor_asal.csv", 
-                        col_types = cols(...1 = col_skip(), `Nomor Pendaftaran` = col_character(), 
-                                         `Nilai Total` = col_double())) %>% change_column_names()
-  smp_rapor <- merge(smp_rapor, rincian_sekolah%>%select(nama_sekolah, warna_sekolah), by.x = "sekolah_pilihan", by.y = "nama_sekolah", all.x = TRUE)
+  # write.csv(smp_prestasi, "PPDB-Bogor_Shiny/smp_prestasi_asal.csv")
+  # write.csv(smp_rapor, "PPDB-Bogor_Shiny/smp_rapor_asal.csv")
+  # write.csv(smp_zonasi, "PPDB-Bogor_Shiny/smp_zonasi_hasil.csv")
   
-  ### ZONASI ###
-  smp_zonasi <- read_csv("E:/Proyekan/PPDB Bogor/Hasil/shiny-datasets/smp_zonasi_hasil.csv", 
-                         col_types = cols(#...1 = col_skip(),
-                                          `Jarak (meter)` = col_double())) %>% change_column_names()
-  smp_zonasi <- smp_zonasi %>%
-    mutate(
-      warna_zona = ifelse(zona == "Zona 1", "#e53935",
-                     ifelse(zona == "Zona 2", "#ffb74d",
-                            ifelse(zona == "Zona 3", "#ffee58",
-                                   ifelse(zona == "Zona 4", "#388e5a",
-                                          ifelse(zona == "Zona 5", "#42a5f5",
-                                                 ifelse(zona == "Zona 6", "#8756d5",
-                                                        ifelse(zona == "Zona 7", "#ea9bd7", "grey")))))))) %>%
-    rename(No = 1) %>%
-    merge(rincian_sekolah%>%select(nama_sekolah, warna_sekolah), by.x = "pilihan_sekolah", by.y = "nama_sekolah", all.x = TRUE) %>%
-    arrange(No)
+  smp_prestasi <- read.csv("smp_prestasi_asal.csv")
+  smp_rapor <- read.csv("smp_rapor_hasil.csv")
+  smp_zonasi <- read.csv("smp_zonasi_hasil.csv")
+  rincian_sekolah <- read.csv("rincian_sekolah.csv")
   
   # MEMBUAT DASHBOARD
   ### PRESTASI ###
@@ -457,8 +466,8 @@ server <- function(input, output, session) {
         color = ~warna_zona,
         fillOpacity = 0.3,
         label = ~paste(zona, ":", jarak__meter_, "meter")
-      ) %>%
-      setView(lng = mean(df_peta$longitude), lat = mean(df_peta$latitude), zoom = 13)
+      ) #%>%
+      #setView(lng = mean(df_peta$longitude), lat = mean(df_peta$latitude), zoom = 13)
   })
   output$persentaseZona <- renderPlotly({
     persentase_zona <- data_zonasi()[1:input$zonasiUrutan, ] %>%

@@ -7,6 +7,7 @@ library(reactable)
 library(reactablefmtr)
 library(leaflet)
 library(randomcoloR)
+library(viridis)
 library(shinycssloaders)
 
 # DASHBOARD #

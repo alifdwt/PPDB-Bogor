@@ -1,74 +1,179 @@
+library(shiny)
+library(shinydashboard)
+#library(shinydashboardPlus)
+library(tidyverse)
+library(plotly)
+library(reactable)
+library(reactablefmtr)
+library(leaflet)
+library(randomcoloR)
+library(viridis)
+library(shinycssloaders)
+library(RCurl)
+
+change_column_names <- function(data) {
+  colnames(data) <- colnames(data) %>%
+    str_replace_all("[^[:alnum:]_]", "_") %>%
+    str_to_lower()
+  return(data)
+}
+
+# DATA #
+smp_prestasi <<- read.csv(text = getURL("https://raw.githubusercontent.com/alifdwt/PPDB-Bogor/main/PPDB-Bogor_Shiny/smp_prestasi_asal.csv"))
+smp_rapor <<- read.csv(text = getURL("https://raw.githubusercontent.com/alifdwt/PPDB-Bogor/main/PPDB-Bogor_Shiny/smp_rapor_asal.csv"))
+smp_zonasi <<- read.csv(text = getURL("https://raw.githubusercontent.com/alifdwt/PPDB-Bogor/main/PPDB-Bogor_Shiny/smp_zonasi_hasil.csv"))
+rincian_sekolah <<- read.csv(text = getURL("https://raw.githubusercontent.com/alifdwt/PPDB-Bogor/main/PPDB-Bogor_Shiny/rincian_sekolah.csv"))
+warna_prestasi <- data.frame(jenis_kejuaraan = unique(smp_prestasi$jenis_kejuaraan),
+                                                      warna_prestasi = distinctColorPalette(length(unique(smp_prestasi$jenis_kejuaraan))))
+
+# DASHBOARD UI  #
+ui <- dashboardPage(
+  dashboardHeader(title = "PPDB Kota Bogor (SMP)"),
+  dashboardSidebar(
+    sidebarMenu(
+      menuItem("Prestasi", tabName = "prestasi", icon = icon("trophy")),
+      menuItem("Rapor", tabName = "rapor", icon = icon("book")),
+      menuItem("Zonasi", tabName = "zonasi", icon = icon("map"))
+    )
+  ),
+  dashboardBody(
+    tabItems(
+      ### PRESTASI ###
+      tabItem(tabName = "prestasi",
+              fluidRow(
+                box(
+                  width = 4,
+                  status = "primary",
+                  title = "Sekolah:",
+                  selectInput("sekolahInput", "Pilihan Sekolah:",
+                              choices = c("Semua Sekolah", unique(smp_prestasi$sekolah_pilihan)))
+                ),
+                infoBoxOutput("jumlahSiswaPrestasi"),
+                infoBoxOutput("prestasiTerbanyak"),
+                infoBoxOutput("nilaiTertinggiPrestasi"),
+                infoBoxOutput("passingGradePrestasi"),
+                box(
+                  width = 6, status = "info", solidHeader = TRUE,
+                  title = "Prestasi Akademik / Non Akademik",
+                  withSpinner(plotlyOutput(
+                    outputId = "grafikPrestasi"
+                  ))
+                ),
+                box(
+                  width = 6, status = "info", solidHeader = TRUE,
+                  title = "Sekolah Teratas",
+                  withSpinner(plotlyOutput(
+                    outputId = "sekolahPrestasi"
+                  ))
+                ),
+                box(
+                  width = 12, status = "success", solidHeader = TRUE,
+                  title = "Daftar Siswa Hasil Seleksi Prestasi Akademik / Non Akademik",
+                  withSpinner(reactableOutput("tabelPrestasi")
+                  ))
+              )),
+      ### RAPOR ###
+      tabItem(tabName = "rapor",
+              fluidRow(
+                box(
+                  width = 4,
+                  status = "primary",
+                  title = "Sekolah:",
+                  selectInput("sekolahInputRapor", "Pilihan Sekolah:",
+                              choices = c("Semua Sekolah", unique(smp_rapor$sekolah_pilihan)))
+                ),
+                infoBoxOutput("jumlahSiswaRapor"),
+                infoBoxOutput("nilaiTertinggiRapor"),
+                infoBoxOutput("passingGradeRapor"),
+                box(
+                  width = 12, status = "info", solidHeader = TRUE,
+                  title = "Sekolah Teratas",
+                  withSpinner(plotlyOutput(
+                    outputId = "sekolahRapor"
+                  ))
+                ),
+                box(
+                  width = 12, status = "success", solidHeader = TRUE,
+                  title = "Daftar Siswa Hasil Seleksi Rapor",
+                  reactableOutput("tabelRapor")
+                )
+              )),
+      ### ZONASI ###
+      tabItem(tabName = "zonasi",
+              fluidRow(
+                box(
+                  width = 6,
+                  style = "height: 180px;",
+                  status = "primary", solidHeader = TRUE,
+                  title = "Sekolah:",
+                  selectInput("sekolahInputZonasi", "Pilihan Sekolah:",
+                              choices = c("Semua Sekolah", unique(smp_zonasi$pilihan_sekolah)),
+                              selected = "SMP NEGERI 1 BOGOR"),
+                  selectInput("zonasiInput", "Zonasi:",
+                              choices = c("Semua Zona", "Zona 1", "Zona 2", "Zona 3", "Zona 4", "Zona 5", "Zona 6", "Zona 7"))
+                ),
+                box(width = 6,
+                    style = "height: 180px;",
+                    status = "primary", solidHeader = TRUE,
+                    title = "Status:",
+                    selectInput("zonasiStatus", "Status:",
+                                choices = c("Semua", unique(smp_zonasi$hasil)),
+                                selected = "Diterima"),
+                    sliderInput("zonasiUrutan", "Urutan:",
+                                min = 1, max = nrow(smp_zonasi), value = 100, step = 1)
+                ),                    
+                infoBoxOutput("jumlahSiswaZonasi", width = 2),
+                infoBoxOutput("jumlahTerimaZonasi", width = 2),
+                infoBoxOutput("jumlahTolakZonasi", width = 2),
+                infoBoxOutput("jarakTerdekatZonasi", width = 2),
+                infoBoxOutput("jarakTerjauhZonasi", width = 2),
+                infoBoxOutput("sekolahTeratasZonasi", width = 2),
+                box(
+                  width = 8,
+                  status = "success", solidHeader = TRUE,
+                  title = "Peta Penerimaan Jalur Zonasi",
+                  withSpinner(
+                    leafletOutput("petaZonasi")
+                  )
+                ),
+                box(
+                  width = 4,
+                  status = "info", solidHeader = TRUE,
+                  title = "Persentase Zona",
+                  withSpinner(plotlyOutput(
+                    outputId = "persentaseZona"
+                  ))
+                ),
+                box(
+                  width = 8,
+                  status = "info", solidHeader = TRUE,
+                  title = "Sekolah Teratas per Zona",
+                  withSpinner(plotlyOutput(
+                    outputId = "topSekolahZonasiZona"
+                  ))
+                ),
+                box(
+                  width = 4,
+                  status = "success", solidHeader = TRUE,
+                  title = "Sekolah Teratas per Status Penerimaan",
+                  withSpinner(plotlyOutput(
+                    outputId = "topSekolahZonasiStatus"
+                  ))
+                ),
+                box(
+                  width = 12, status = "success", solidHeader = TRUE,
+                  title = "Daftar Siswa Hasil Seleksi Zonasi",
+                  withSpinner(reactableOutput("tabelZonasi"))
+                )
+              ))
+    )
+  ),
+  skin = "green"
+)
+
+
 server <- function(input, output, session) {
-  
-  change_column_names <- function(data) {
-    colnames(data) <- colnames(data) %>%
-      str_replace_all("[^[:alnum:]_]", "_") %>%
-      str_to_lower()
-    return(data)
-  }
-  
-  # Membuat daftar zona dalam for loop
-  # daftar_zona <- c()
-  # for (i in 0:7) {
-  #   zona <- ifelse(i == 0, "Semua Zona", paste0("Zona ", i))
-  #   daftar_zona <- c(daftar_zona, zona)
-  # }
-  
-  # MEMUAT DATA
-  ### RINCIAN ###
-  # lokasi_sekolah <- read_csv("E:/Proyekan/PPDB Bogor/Hasil/shiny-datasets/lokasi_sekolah.csv",
-  #                           col_types = cols(No = col_skip(), Koordinat = col_skip())) %>% change_column_names()
-  # lokasi_sekolah$warna_sekolah <- distinctColorPalette(length(unique(lokasi_sekolah$nama_sekolah)))
-  # write.csv(lokasi_sekolah, "PPDB-Bogor_Shiny/rincian_sekolah.csv")
-  # rincian_sekolah <- read_csv("https://raw.githubusercontent.com/alifdwt/PPDB-Bogor/main/Hasil/shiny-datasets/rincian_sekolah.csv", 
-  #                             col_types = cols(...1 = col_skip()))
-  # ### PRESTASI ###
-  # smp_prestasi <- read_csv("https://raw.githubusercontent.com/alifdwt/PPDB-Bogor/main/Hasil/shiny-datasets/smp_prestasi_asal.csv", 
-  #                          col_types = cols(...1 = col_skip(), `Nomor Pendaftaran` = col_character(), 
-  #                                           `Jenis Kejuaraan` = col_character(), 
-  #                                           `Nilai Total` = col_double())) %>% change_column_names()
-  # smp_prestasi$jenis_kejuaraan <- str_to_upper(smp_prestasi$jenis_kejuaraan)
-  # smp_prestasi <- drop_na(smp_prestasi)
-  # warna_prestasi <- data.frame(jenis_kejuaraan = unique(smp_prestasi$jenis_kejuaraan),
-  #                              warna_prestasi = distinctColorPalette(length(unique(smp_prestasi$jenis_kejuaraan))))
-  # smp_prestasi <- smp_prestasi %>%
-  #   left_join(rincian_sekolah%>%select(nama_sekolah, warna_sekolah), by=c("sekolah_pilihan" = "nama_sekolah")) %>%
-  #   left_join(warna_prestasi, by="jenis_kejuaraan")
-  # 
-  # ### RAPOR ###
-  # smp_rapor <- read_csv("https://raw.githubusercontent.com/alifdwt/PPDB-Bogor/main/Hasil/shiny-datasets/smp_rapor_asal.csv", 
-  #                       col_types = cols(...1 = col_skip(), `Nomor Pendaftaran` = col_character(), 
-  #                                        `Nilai Total` = col_double())) %>% change_column_names()
-  # smp_rapor <- merge(smp_rapor, rincian_sekolah%>%select(nama_sekolah, warna_sekolah), by.x = "sekolah_pilihan", by.y = "nama_sekolah", all.x = TRUE)
-  # 
-  # ### ZONASI ###
-  # smp_zonasi <- read_csv("https://raw.githubusercontent.com/alifdwt/PPDB-Bogor/main/Hasil/shiny-datasets/smp_zonasi_hasil.csv", 
-  #                        col_types = cols(#...1 = col_skip(),
-  #                                         `Jarak (meter)` = col_double())) %>% change_column_names()
-  # smp_zonasi <- smp_zonasi %>%
-  #   mutate(
-  #     warna_zona = ifelse(zona == "Zona 1", "#e53935",
-  #                    ifelse(zona == "Zona 2", "#ffb74d",
-  #                           ifelse(zona == "Zona 3", "#ffee58",
-  #                                  ifelse(zona == "Zona 4", "#388e5a",
-  #                                         ifelse(zona == "Zona 5", "#42a5f5",
-  #                                                ifelse(zona == "Zona 6", "#8756d5",
-  #                                                       ifelse(zona == "Zona 7", "#ea9bd7", "grey")))))))) %>%
-  #   rename(No = 1) %>%
-  #   merge(rincian_sekolah%>%select(nama_sekolah, warna_sekolah), by.x = "pilihan_sekolah", by.y = "nama_sekolah", all.x = TRUE) %>%
-  #   arrange(No)
-  
-  # write.csv(smp_prestasi, "PPDB-Bogor_Shiny/smp_prestasi_asal.csv")
-  # write.csv(smp_rapor, "PPDB-Bogor_Shiny/smp_rapor_asal.csv")
-  # write.csv(smp_zonasi, "PPDB-Bogor_Shiny/smp_zonasi_hasil.csv")
-  
-  smp_prestasi <<- read.csv(text = getURL("https://raw.githubusercontent.com/alifdwt/PPDB-Bogor/main/PPDB-Bogor_Shiny/smp_prestasi_asal.csv"))
-  smp_rapor <<- read.csv(text = getURL("https://raw.githubusercontent.com/alifdwt/PPDB-Bogor/main/PPDB-Bogor_Shiny/smp_rapor_asal.csv"))
-  smp_zonasi <<- read.csv(text = getURL("https://raw.githubusercontent.com/alifdwt/PPDB-Bogor/main/PPDB-Bogor_Shiny/smp_zonasi_hasil.csv"))
-  rincian_sekolah <<- read.csv(text = getURL("https://raw.githubusercontent.com/alifdwt/PPDB-Bogor/main/PPDB-Bogor_Shiny/rincian_sekolah.csv"))
-  
-  # MEMBUAT DASHBOARD
-  ### PRESTASI ###
+### PRESTASI ###
   output$jumlahSiswaPrestasi <- renderInfoBox({
     if (input$sekolahInput == "Semua Sekolah") {
       infoBox(
@@ -138,45 +243,57 @@ server <- function(input, output, session) {
   })
   output$grafikPrestasi <- renderPlotly({
     if (input$sekolahInput == "Semua Sekolah") {
-      top_prestasi <- as.data.frame(table(smp_prestasi$jenis_kejuaraan)) %>% arrange(desc(Freq)) %>% head(10)
+      top_prestasi <- smp_prestasi %>%
+        select(jenis_kejuaraan, warna_prestasi) %>%
+        table() %>%
+        as.data.frame() %>%
+        arrange(desc(Freq)) %>%
+        head(10)
     } else {
-      top_prestasi <- as.data.frame(table(smp_prestasi$jenis_kejuaraan[smp_prestasi$sekolah_pilihan == input$sekolahInput])) %>% arrange(desc(Freq)) %>% head(10)
+      top_prestasi <- smp_prestasi %>%
+        filter(sekolah_pilihan == input$sekolahInput) %>%
+        select(jenis_kejuaraan, warna_prestasi) %>%
+        table() %>%
+        as.data.frame() %>%
+        arrange(desc(Freq)) %>%
+        head(10)
     }
-    top_prestasi <- merge(top_prestasi, warna_prestasi, by.x="Var1", by.y = "jenis_kejuaraan", all.x = TRUE)
     
-    plot1 <- top_prestasi %>% ggplot(aes(x = reorder(Var1, Freq), y = Freq)) +
-      geom_bar(stat = "identity", aes(fill=Var1), show.legend = FALSE) +
-      #geom_text(aes(x=Var1, y=Freq), hjust = 0, nudge_x = -0.25, color = "white") +
-      labs(title = paste0(top_prestasi %>% nrow(), " Prestasi Teratas ", input$sekolahInput),
-           x = "",
-           y = "Jumlah") +
-      coord_flip() +
-      scale_fill_manual(values = top_prestasi$warna_prestasi) +
-      theme_minimal()
-    
-    ggplotly(plot1) %>%
-      config(displayModeBar = F) %>%
-      layout(autosize = TRUE, showlegend = FALSE)
+    plot_1 <- plot_ly(top_prestasi, y = ~jenis_kejuaraan, x = ~Freq,
+                      type = 'bar', orientation = 'h', marker = list(color = ~warna_prestasi)) %>%
+      layout(
+        xaxis = list(title = "Jumlah Siswa"),
+        yaxis = list(title = "Prestasi", categoryorder = "total ascending"),
+        title = paste(nrow(top_prestasi), "Prestasi Teratas di", input$sekolahInput)
+      )
+    plot_1
   })
   output$sekolahPrestasi <- renderPlotly({
     if (input$sekolahInput == "Semua Sekolah") {
-      top_sekolah <- as.data.frame(table(smp_prestasi$asal_sekolah)) %>% arrange(desc(Freq)) %>% head(10)
+      top_sekolah <- smp_prestasi %>%
+        select(asal_sekolah) %>%
+        table() %>%
+        as.data.frame() %>%
+        arrange(desc(Freq)) %>%
+        head(10)
     } else {
-      top_sekolah <- as.data.frame(table(smp_prestasi$asal_sekolah[smp_prestasi$sekolah_pilihan == input$sekolahInput])) %>% arrange(desc(Freq)) %>% head(10)
+      top_sekolah <- smp_prestasi %>%
+        filter(sekolah_pilihan == input$sekolahInput) %>%
+        select(asal_sekolah) %>%
+        table() %>%
+        as.data.frame() %>%
+        arrange(desc(Freq)) %>%
+        head(10)
     }
     
-    plot2 <- top_sekolah %>% ggplot(aes(x = reorder(Var1, Freq), y = Freq)) +
-      geom_bar(stat = "identity", aes(fill=Var1), show.legend = FALSE) +
-      labs(title = paste0(top_sekolah %>% nrow(), " Sekolah Asal dengan Jumlah Terbanyak di ", input$sekolahInput),
-           x = "",
-           y = "Jumlah") +
-      coord_flip() +
-      scale_fill_manual(values = distinctColorPalette(length(unique(top_sekolah$Var1)))) +
-      theme_minimal()
-    
-    ggplotly(plot2) %>%
-      config(displayModeBar = F) %>%
-      layout(autosize = TRUE, showlegend = FALSE)
+    plot_2 <- plot_ly(top_sekolah, y = ~asal_sekolah, x = ~Freq,
+                     type = 'bar', orientation = 'h', marker = list(color = distinctColorPalette(length(unique(top_sekolah$asal_sekolah))))) %>%
+      layout(
+        xaxis = list(title = "Jumlah Siswa"),
+        yaxis = list(title = "Sekolah", categoryorder = "total ascending"),
+        title = paste(nrow(top_sekolah), "Sekolah Teratas Jalur Prestasi di", input$sekolahInput)
+      )
+    plot_2
   })
   output$tabelPrestasi <- renderReactable({
     if (input$sekolahInput == "Semua Sekolah") {
@@ -297,23 +414,30 @@ server <- function(input, output, session) {
   })
   output$sekolahRapor <- renderPlotly({
     if (input$sekolahInputRapor == "Semua Sekolah") {
-      top_sekolah_rapor <- as.data.frame(table(smp_rapor$asal_sekolah)) %>% arrange(desc(Freq)) %>% head(10)
+      top_sekolah_rapor <- smp_rapor %>%
+        select(asal_sekolah) %>%
+        table() %>%
+        as.data.frame() %>%
+        arrange(desc(Freq)) %>%
+        head(10)
     } else {
-      top_sekolah_rapor <- as.data.frame(table(smp_rapor$asal_sekolah[smp_rapor$sekolah_pilihan == input$sekolahInputRapor])) %>% arrange(desc(Freq)) %>% head(10)
+      top_sekolah_rapor <- smp_rapor %>%
+        filter(sekolah_pilihan == input$sekolahInputRapor) %>%
+        select(asal_sekolah) %>%
+        table() %>%
+        as.data.frame() %>%
+        arrange(desc(Freq)) %>%
+        head(10)
     }
     
-    plot3 <- top_sekolah_rapor %>% ggplot(aes(x = reorder(Var1, Freq), y = Freq)) +
-      geom_bar(stat = "identity", aes(fill = Var1), show.legend = FALSE) +
-      labs(title = paste0(top_sekolah_rapor %>% nrow(), " Sekolah dengan Pendaftar Terbanyak di ", input$sekolahInputRapor),
-           x = "",
-           y = "Jumlah") +
-      coord_flip() +
-      scale_fill_manual(values = distinctColorPalette(length(unique(top_sekolah_rapor$Var1))))
-    theme_minimal()
-    
-    ggplotly(plot3) %>%
-      config(displayModeBar = F) %>%
-      layout(autosize = TRUE, showlegend = FALSE)
+    plot_3 <- plot_ly(top_sekolah_rapor, y = ~asal_sekolah, x = ~Freq,
+                      type = 'bar', orientation = 'h', marker = list(color = distinctColorPalette(length(unique(top_sekolah_rapor$asal_sekolah))))) %>%
+      layout(
+        xaxis = list(title = "Jumlah Siswa"),
+        yaxis = list(title = "Sekolah", categoryorder = "total ascending"),
+        title = paste(nrow(top_sekolah_rapor), "Sekolah Teratas Jalur Rapor di", input$sekolahInputRapor)
+      )
+    plot_3
   })
   output$tabelRapor <- renderReactable({
     if (input$sekolahInputRapor == "Semua Sekolah") {
@@ -464,7 +588,7 @@ server <- function(input, output, session) {
       addCircles(
         radius = ~jarak__meter_,
         color = ~warna_zona,
-        fillOpacity = 0.3,
+        fillOpacity = 0.2,
         label = ~paste(zona, ":", jarak__meter_, "meter")
       ) #%>%
       #setView(lng = mean(df_peta$longitude), lat = mean(df_peta$latitude), zoom = 13)
@@ -629,4 +753,4 @@ server <- function(input, output, session) {
   })
 }
 
-#shinyApp(ui, server)
+shinyApp(ui, server)

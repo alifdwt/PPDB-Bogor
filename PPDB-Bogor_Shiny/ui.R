@@ -9,6 +9,7 @@ library(leaflet)
 library(randomcoloR)
 library(viridis)
 library(shinycssloaders)
+library(RCurl)
 
 # DASHBOARD #
 ui <- dashboardPage(
